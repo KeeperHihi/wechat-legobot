@@ -3,14 +3,17 @@ from pathlib import Path
 import utils as U
 
 import sys
-sys.path.append("C:/Users/Jin/Workspace/Wcf")
+BASE_DIR = Path(__file__).resolve().parent
+WCF_DIR = BASE_DIR / 'Wcf'
+if str(WCF_DIR) not in sys.path:
+    sys.path.insert(0, str(WCF_DIR))
 from Wcf import Wcf
 
 
 class State:
     def __init__(self):
         # 通用全局变量
-        self.base_path = Path(__file__).resolve().parent
+        self.base_path = BASE_DIR
         self.config = U.load_yaml(self.base_path / 'config' / 'config.yaml')
         self.group = self.config.get('group', {}) # 用户分类，比如 owner, commander
         self.plugin_usable = self._init_plugin_usable()
