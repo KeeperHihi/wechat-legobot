@@ -30,10 +30,17 @@ class Plugin:
             'zhu',
             'None',
         ]
-        self.memory_len = self.config['model']['memory_len']
-        self.default_provider = self.config['other']['default_provider']
+        model_config = self.config['model']
+        other_config = self.config['other']
+        providers_config = self.config['api']['providers']
+
+        self.memory_len = model_config['memory_len']
+        self.default_provider = other_config['default_provider']
+        if self.default_provider not in providers_config:
+            raise ValueError('llm 配置错误：other.default_provider 不在 api.providers 中')
+
         self.user_providers = {name: self.default_provider for name in self.state.friend_names}
-        all_providers = self.config['api']['providers']
+        all_providers = providers_config
         self.available_providers = [name for name, value in all_providers.items()]
         self.rcv_queue = Queue()
         self.threadpool = ThreadPool(
@@ -41,52 +48,52 @@ class Plugin:
             user_providers=self.user_providers,
             user_sys_prompt_type=self.user_sys_prompt_type,
             config=self.config,
-            memory_len=20
+            memory_len=self.memory_len
         )
         thread_checker = threading.Thread(target=self.check_msg_receive, daemon=True)
         thread_checker.start()
 
         self.help_doc = '''【帮助文档】
 
-    一、人格相关
-    注：引号前面为指令
-    1. 查看人格：输出当前用户对应的人格
-    2. change xxx：转变为对应的人格
-    目前支持：
-    ① fu：芙宁娜
-    ② luo：洛可可
-    ③ zhu：小助手
-    ④ None：正常AI
-    3. 重置：遗忘之前的对话
+一、人格相关
+注：引号前面为指令
+1. 查看人格：输出当前用户对应的人格
+2. change xxx：转变为对应的人格
+目前支持：
+① fu：芙宁娜
+② luo：洛可可
+③ zhu：小助手
+④ None：正常AI
+3. 重置：遗忘之前的对话
 
-    二、对话相关
-    在私聊中，直接发消息即可发起对话
-    在群聊中，@hihi 或者直接呼叫人格的名字均可开启对话
+二、对话相关
+在私聊中，直接发消息即可发起对话
+在群聊中，@hihi 或者直接呼叫人格的名字均可开启对话
 
-    三、模型相关
-    1. 查看模型：输出当前用户对应的模型
-    2. change model xxx：转变为对应的模型
+三、模型相关
+1. 查看模型：输出当前用户对应的模型
+2. change model xxx：转变为对应的模型
 
-    四、小功能
-    1. 五子棋小游戏
-    指令格式：
-    来把五子棋 player n
-    - 其中：
-    - player=0/1 代表你是先手还是后手，0 代表先手
-    - 5<=n<=26 代表棋盘大小
-    ~ 举例：“来把五子棋 0 15”
-    互动格式：
-    fg 表示下在f行g列的位置
-    如果没有发送棋盘，请不断给hihi发送
-    “？？？”
-    直到它发送棋盘为止。
-    终止游戏的指令：我不想玩了
+四、小功能
+1. 五子棋小游戏
+指令格式：
+来把五子棋 player n
+- 其中：
+- player=0/1 代表你是先手还是后手，0 代表先手
+- 5<=n<=26 代表棋盘大小
+~ 举例：“来把五子棋 0 15”
+互动格式：
+fg 表示下在f行g列的位置
+如果没有发送棋盘，请不断给hihi发送
+“？？？”
+直到它发送棋盘为止。
+终止游戏的指令：我不想玩了
 
-    2. 意外之喜
-    “说句人话 xxx”
-    “答案之书”
-    “加密 key content”
-    注意key只能是数字，空格不可以少
+2. 意外之喜
+“说句人话 xxx”
+“答案之书”
+“加密 key content”
+注意key只能是数字，空格不可以少
     '''
 
 
@@ -118,7 +125,6 @@ class Plugin:
         input_message = {
             'role': 'user',
             'content': msg.content,
-            "weight": 1,
         }
         idx = self.threadpool.send_msg(input_message, msg.sender)
         self.rcv_queue.put((idx, msg))
@@ -210,14 +216,13 @@ class Plugin:
                 output_message = {
                     'role': 'assistant',
                     'content': response,
-                    "weight": 1,
                 }
                 self.threadpool.add_msg(msg.sender, output_message)
                 self.send(msg, response)
                 return 0
 
             if is_room and sender in commanders:
-                # 优先考察是否来自群消息
+                # 来自群消息
                 send_response()
             elif sender in commanders:
                 # 其次考察是否是 commander 们发来的消息

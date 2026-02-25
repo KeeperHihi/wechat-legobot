@@ -41,8 +41,15 @@ class MsgQueue:
     def check_len(self):
         with self.lock:
             while self.queue.qsize() > self.memory_len:
-                self.queue.get()
-                self.queue.get()
+                try:
+                    self.queue.get_nowait()
+                except Exception:
+                    break
+                if self.queue.qsize() > self.memory_len:
+                    try:
+                        self.queue.get_nowait()
+                    except Exception:
+                        break
 
     def clear(self):
         with self.lock:
@@ -57,7 +64,6 @@ def insert_prompt(messages, type):
     messages.insert(0, {
         'role': 'system',
         'content': sys_prompts[type],
-        "weight": 1,
     })
     return messages
 

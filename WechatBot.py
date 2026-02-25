@@ -15,6 +15,9 @@ def main():
     state.init()
 
     plugins = load_plugins(state)
+    plugin_usable = getattr(state, 'plugin_usable', None)
+    if isinstance(plugin_usable, dict):
+        plugins = {name: plugin for name, plugin in plugins.items() if plugin_usable.get(name, True)}
     init_plugins(plugins)
 
     state.wcf.enable_receive_msg()
@@ -34,7 +37,7 @@ def main():
 
             handled = dispatch_msg(msg, plugins)
             if not handled:
-                # 如果没有一个插件捕获这个消息，要做 default 处理
+                # 如果没有一个插件捕获这个消息，可以做 default 处理
                 llm_plugin = plugins.get('llm')
                 if llm_plugin is not None and llm_plugin.is_for_me(msg, is_default=True):
                     llm_plugin.handle_msg(msg)

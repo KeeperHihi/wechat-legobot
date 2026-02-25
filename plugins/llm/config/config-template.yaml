@@ -16,10 +16,8 @@ model:
 #    top_p: 0.9
 #    top_k: 50
 #    frequency_penalty: 2.0
-    remember: 20
-    default_type: RightCode
-    default_model: gpt-5.2
+    memory_len: 20
 
 other:
-    emoji_root_dir: emoji
-    emoji_probability: 0.4
+    default_provider: RightCode
+    default_model: gpt-5.2

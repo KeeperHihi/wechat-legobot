@@ -7,14 +7,13 @@ class Plugin:
         self.plugins = plugins
 
     def init(self):
-        self.state.group.setdefault('prohibit', [])
         self.state.group.setdefault('commander', [])
         print('[owner_ops] init 完成')
 
     def is_for_me(self, msg) -> bool:
         if msg is None or msg.type != 0 or not isinstance(msg.content, str):
             return False
-        owner = (self.state.group.get('owner') or [None])[0]
+        owner = (self.state.group.get('owner') or [None])[0] # 用列表了，允许添加多个候选 owner
         if msg.sender != owner:
             return False
         content = msg.content
@@ -34,7 +33,6 @@ class Plugin:
     def handle_msg(self, msg):
         content = msg.content
         receiver = msg.roomid if msg.from_group() else msg.sender
-        prohibit = self.state.group.setdefault('prohibit', [])
         commander = self.state.group.setdefault('commander', [])
         owner = (self.state.group.get('owner') or [None])[0]
 
@@ -73,32 +71,6 @@ class Plugin:
                 self.state.wcf.send_text('全部更改为: ' + to + ' 人格', receiver)
             else:
                 self.state.wcf.send_text('人格无效', receiver)
-            return
-
-        if content.startswith('sudo'):
-            person = content[5:]
-            if person in prohibit:
-                self.state.wcf.send_text(f'{person}已经sudo了', receiver)
-            else:
-                prohibit.append(person)
-                self.state.wcf.send_text('sudo成功', receiver)
-            return
-
-        if content.startswith('unsudo'):
-            person = content[7:]
-            if person not in prohibit:
-                self.state.wcf.send_text(f'{person}已经不sudo了', receiver)
-            else:
-                prohibit.remove(person)
-                self.state.wcf.send_text('unsudo成功', receiver)
-            return
-
-        if content == '查看sudo':
-            people = '、'.join(prohibit)
-            if people == '':
-                self.state.wcf.send_text('sudo list is empty', receiver)
-            else:
-                self.state.wcf.send_text(f'sudo list：{people}', receiver)
             return
 
         if content.startswith('need '):

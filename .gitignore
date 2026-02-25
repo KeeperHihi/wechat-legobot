@@ -2,6 +2,7 @@ __pycache__/
 .idea/
 local/
 TODO.md
+run.bat
 
 # 根配置
 /config/*.yaml

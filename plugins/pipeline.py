@@ -80,6 +80,10 @@ def load_plugins(state):
     plugins = {}
     for main_py in sorted(PLUGINS_DIR.glob('*/main.py')):
         plugin_name = main_py.parent.name
+        plugin_usable = getattr(state, 'plugin_usable', None)
+        if isinstance(plugin_usable, dict) and plugin_usable.get(plugin_name) is False:
+            print(f'[Plugin 禁用] {plugin_name}')
+            continue
         try:
             plugin = _build_plugin_instance(main_py, state)
             if plugin is not None:

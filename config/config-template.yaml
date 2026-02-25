@@ -4,5 +4,6 @@ group:
     commander:
         - xxx
         - xxx
-    prohibit:
-        - xxx
+
+# 禁用插件：填写 plugins 目录下的子目录名（例如 llm、cmd、owner_ops 等）
+disabled_plugins: []

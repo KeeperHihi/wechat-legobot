@@ -1,183 +1,130 @@
-﻿## 插件开发指南
+﻿# WechatBot
 
-本项目采用插件化架构。你只需要在 `plugins` 下新增目录并实现统一契约，就能被自动加载。
+基于 Windows 微信桌面端 UI 自动化的插件化机器人项目。
 
----
+## 项目说明
 
-## 一、插件契约（必须满足）
+- 本项目核心是 `plugin` 抽象：所有功能以插件形式加载和分发。
+- 微信控制能力由 `Wcf` 提供，`Wcf` 来自独立仓库：
+  - 上游仓库：https://github.com/KeeperHihi/Wcf.git
+  - 当前仓库内也包含了 `Wcf/` 目录，便于直接运行。
+- 主程序入口是 `WechatBot.py`，会自动加载 `plugins/*/main.py`。
 
-每个插件目录必须包含：
+## 核心特性
 
-- `plugins/<plugin_name>/main.py`
+- 自动扫描并加载插件，统一校验插件契约（`init / is_for_me / handle_msg`）。
+- 收到消息后按插件顺序分发，首个命中插件负责处理。
+- 无插件命中时走默认处理（当前默认回退到 `llm` 插件）。
+- 支持 `owner / commander` 分组权限。
 
-`main.py` 必须定义一个 `Plugin` 类，且包含这 3 个方法：
+## 项目结构
 
-- `init(self)`
-- `is_for_me(self, msg) -> bool`
-- `handle_msg(self, msg)`
+```text
+WechatBot/
+├─ WechatBot.py              # 主入口
+├─ State.py                  # 全局状态与配置加载
+├─ utils.py                  # 一些工具函数
+├─ config/
+│  ├─ config-template.yaml   # 全局配置模板
+│  └─ config.yaml            # 全局配置（自行填写）
+├─ plugins/
+│  ├─ commander_ops/             # commander 管理操作
+│  ├─ llm/                   # 默认对话与模型控制
+│  ├─ owner_ops/             # owner 管理操作
+│  ├─ pipeline.py            # 插件加载与分发管线
+│  └─ README.md              # 插件开发教程
+└─ Wcf/                      # 微信 UI 控制库
+```
+
+## 环境要求
+
+- 操作系统：Windows
+- Python：建议 `>=3.10`
+- 微信客户端：依赖 UI 自动化能力（微信版本、UI 结构变化可能影响可用性）
+- 运行前需确保微信已登录且桌面端可被 UI 自动化访问
+
+## 安装步骤
+
+1. 创建并激活 Python 虚拟环境（推荐）
+2. 安装依赖
+
+```bash
+pip install -r Wcf/requirements.txt
+pip install pyyaml requests openai
+```
+
+## 配置说明
+
+### 1) 微信配置
+
+详见 Wcf 仓库
+
+### 2) 全局权限配置
+
+复制并修改：`config/config-template.yaml` -> `config/config.yaml`
+
+```yaml
+group:
+  owner:
+    - 你的微信昵称
+  commander:
+    - 允许使用大部分功能的用户昵称
+```
 
 说明：
+- `owner` 只取第一个用户作为最高权限控制者。
+- `commander` 可触发多数业务插件。
 
-- `init`：启动时初始化插件资源（线程、目录、缓存等）。
-- `is_for_me`：判定当前消息是否由该插件处理。
-- `handle_msg`：真正处理消息。
+### 3) 插件启用/禁用
 
-管线会做契约检查，不满足的方法会被跳过并打印原因。
+在 `config/config.yaml` 中通过 `plugins_disabled` 禁用指定插件（填写 `plugins/` 下的子目录名）。启动时会生成 `plugin_usable` 字典，并且只加载其中为 `True` 的插件。
 
----
-
-## 二、运行流程
-
-1. `WechatBot.py` 初始化 `state`
-2. 自动扫描 `plugins/*/main.py`
-3. 动态加载每个 `Plugin`
-4. 依次执行 `init()`
-5. 收到新消息后，按顺序调用各插件 `is_for_me(msg)`
-6. 第一个返回 `True` 的插件执行 `handle_msg(msg)`，本条消息处理结束
-7. 若没有插件接管，走默认逻辑（当前是 `llm` 默认处理）
-
----
-
-## 三、新建插件流程（推荐）
-
-### 1) 创建目录与入口
-
-- 新建目录：`plugins/<your_plugin>/`
-- 新建文件：`plugins/<your_plugin>/main.py`
-
-### 2) 写最小模板
-
-```python
-class Plugin:
-  def __init__(self, state):
-    self.state = state
-
-  def init(self):
-    pass
-
-  def is_for_me(self, msg) -> bool:
-    return False
-
-  def handle_msg(self, msg):
-    pass
+```yaml
+disabled_plugins:
+  - llm
+  - cmd
 ```
 
-### 3) 只认领自己的状态
+### 4) LLM 配置
 
-- 插件运行态（缓存、线程、开关、会话状态）放插件内部。
-- 不要把插件私有变量塞进 `State`。
+复制并修改：`plugins/llm/config/config-template.yaml` -> `plugins/llm/config/config.yaml`
 
-### 4) 插件产物写入插件目录
 
-- 例如：`plugins/five_son/board/`
-- 例如：`plugins/simple_api/images/`
+## 快速启动
 
-不要把插件产物写到项目根目录。
+1. 打开并登录微信客户端
+2. 按需修改 `Wcf/Wcf.py` 中的 `wx_name`（应与当前登录微信昵称一致）
+3. 运行主程序：
 
----
-
-## 四、单独调试某个插件
-
-插件常见需求是“既能被主程序加载，也能单独执行调试”。
-
-建议在插件里支持两种导入方式：
-
-```python
-import sys
-from pathlib import Path
-
-try:
-  from .ABC import ABC
-except ImportError:
-  CURRENT_DIR = Path(__file__).resolve().parent
-  if str(CURRENT_DIR) not in sys.path:
-    sys.path.insert(0, str(CURRENT_DIR))
-  from ABC import ABC
+```bash
+python WechatBot.py
 ```
 
-这样直接运行 `main.py` 即可
+看到类似日志表示启动成功：
 
----
-
-## 五、注意事项
-
-1) **消息过滤要保守**
-
-- `is_for_me` 条件不要过宽，避免误吞其它插件消息。
-
-2) **不要依赖插件加载顺序做业务正确性**
-
-- 如果必须顺序依赖，请在设计时显式拆分职责。
-
-3) **跨插件调用尽量少**
-
-- 优先在本插件内完成逻辑。
-- 确实需要跨插件时，可实现可选的 `bind_plugins(self, plugins)`。
-
-### `bind_plugins` 详细说明
-
-`bind_plugins` 是一个**可选钩子**，用于“确实需要跨插件协作”时注入依赖。用它说明你的插件组织的有点shi
-
-#### 1) 什么时候用
-
-- 需要访问其他插件的公开状态/方法（例如 `owner_ops` 需要操作 `llm`）。
-- 且你不想把这些依赖塞进 `State`。
-
-如果插件可以独立完成功能，就不要引入 `bind_plugins`。
-
-#### 2) 执行时机
-
-当前管线顺序是：
-
-1. `load_plugins(state)`：实例化所有插件
-2. `init_plugins(plugins)`：
-   - 先调用每个插件的 `bind_plugins(plugins)`（若存在）
-   - 再调用每个插件的 `init()`
-
-所以：`bind_plugins` 在 `init` 前执行。
-
-#### 3) 标准写法
-
-```python
-class Plugin:
-  def __init__(self, state):
-    self.state = state
-    self.plugins = {}
-
-  def bind_plugins(self, plugins):
-    self.plugins = plugins
-
-  def init(self):
-    pass
+```text
+WechatBot 已启动，共加载 N 个 plugin
 ```
 
-#### 4) 约束与边界
+## 内置插件概览
 
-- 只做“依赖注入”，不要在 `bind_plugins` 里启动线程或执行耗时逻辑。
-- 只依赖对方的稳定接口，避免直接改动对方内部私有变量。
-- 尽量单向依赖，避免 A 依赖 B、B 又依赖 A 的循环耦合。
+插件写的比较shi，如果看着不爽可以都删掉，只是作为开发样例。
 
-4) **异常处理**
+- `plugins/llm`：默认对话插件，支持人格切换、模型切换、上下文重置等。
+- `plugins/owner_ops`：owner 管理指令（停机、权限管理、批量切换等）。
 
-- 插件内部可捕获并输出可读错误。
-- 管线层也有兜底，单个插件异常不会直接打崩主循环。
+## 插件开发
 
-5) **权限控制**
+插件开发教程见：`plugins/README.md`
 
-- 涉及管理指令（owner/commander）必须在 `is_for_me` 或 `handle_msg` 内做身份校验。
+该文档包含：
+- 插件契约与最小模板
+- 自动加载与分发流程
+- `bind_plugins` 跨插件依赖注入机制
+- 调试建议与注意事项
 
+## 免责声明
 
----
+本项目仅用于学习、研究与个人自动化测试。使用者需自行承担全部风险与责任，包括但不限于账号风险、数据安全风险，以及因违反微信相关协议或当地法律法规导致的后果。请勿将本项目用于任何违法、滥用或侵犯他人权益的用途。
 
-
-## 六、现有插件参考
-
-这些是从旧的 `wcferry` 项目迁移过来的，仅供参考，不喜欢可以全删了。
-
-- `plugins/llm`：主对话插件（含控制指令）
-- `plugins/cmd`：owner 命令行插件
-- `plugins/five_son`：五子棋插件（旧逻辑复用）
-- `plugins/simple_api`：加密/解密/答案之书/HW 等小功能
-- `plugins/owner_ops`：owner 管理指令
-- `plugins/access_control`：禁用名单拦截
-- `plugins/video_solver`：最小示例插件
+项目依赖 UI 自动化控制微信，理论上相较注入式方案风险更低，但并不代表无风险。任何封号、限制或其他损失均由使用者自行承担。

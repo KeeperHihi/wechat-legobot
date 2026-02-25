@@ -27,8 +27,10 @@ def error_function(state, exc_type, exc_value, exc_traceback):
     error += f"异常跟踪: {exc_traceback}\n"
     traceback.print_exception(exc_type, exc_value, exc_traceback)  # 打印堆栈信息
 
-    state.wcf.send_text(error, state.group['owner_name'])
-    time.sleep(0.5)
-    state.wcf.send_text('hihi好像是似掉了😭😭😭', state.group['owner_name'])
+    owner = (state.group.get('owner') or [None])[0]
+    if owner and hasattr(state, 'wcf'):
+        state.wcf.send_text(error, owner)
+        time.sleep(0.5)
+        state.wcf.send_text('hihi好像是似掉了😭😭😭', owner)
 
     sys.exit(-520)

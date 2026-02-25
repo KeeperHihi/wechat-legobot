@@ -1,6 +1,9 @@
 from pathlib import Path
 
 import utils as U
+
+import sys
+sys.path.append("C:/Users/Jin/Workspace/Wcf")
 from Wcf import Wcf
 
 
@@ -9,8 +12,29 @@ class State:
         # 通用全局变量
         self.base_path = Path(__file__).resolve().parent
         self.config = U.load_yaml(self.base_path / 'config' / 'config.yaml')
-        self.group = self.config.get('group', {}) # 用户分类，比如 owner, commander, prohibit
+        self.group = self.config.get('group', {}) # 用户分类，比如 owner, commander
+        self.plugin_usable = self._init_plugin_usable()
         self.stop_requested = False
+
+
+    def _init_plugin_usable(self):
+        disabled = self.config.get('disabled_plugins')
+
+        disabled_set = set()
+        if isinstance(disabled, str):
+            disabled_set.add(disabled)
+        elif isinstance(disabled, list):
+            disabled_set.update(str(x) for x in disabled if x is not None and str(x).strip())
+        elif disabled is not None:
+            print(f'[Config 警告] disabled_plugins 期望是 list[str]，实际是 {type(disabled).__name__}，将忽略')
+
+        plugins_dir = self.base_path / 'plugins'
+        usable = {}
+        for main_py in plugins_dir.glob('*/main.py'):
+            plugin_name = main_py.parent.name
+            usable[plugin_name] = plugin_name not in disabled_set
+
+        return usable
 
 
     def init(self):

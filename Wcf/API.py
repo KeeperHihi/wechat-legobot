@@ -1,46 +1,26 @@
 from openai import OpenAI
 import sys
 from pathlib import Path
-import time
-
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
-
 import utils as U
 
 
 class API:
-    def __init__(self, config, provider_name=None):
+    def __init__(self, config):
         self.config = config
-        self.provider_name = provider_name
         self.client = None
         self.api_key = None
         self.url = None
         self.model = None
-        self.request_timeout = None
         self.init()
 
     def init(self):
-        providers = self.config['api']['providers']
-        provider = providers[self.provider_name]
-
-        other_config = self.config.get('other', {}) or {}
-        # Prevent indefinite hangs when network/provider stalls.
-        self.request_timeout = other_config.get('request_timeout', 30)
-        try:
-            self.request_timeout = float(self.request_timeout)
-        except Exception:
-            self.request_timeout = 30.0
-
-        self.api_key = provider['api_key']
-        self.url = self._normalize_base_url(provider['url'])
-        self.model = provider['model']
+        self.api_key = self.config['provider']['api_key']
+        self.url = self._normalize_base_url(self.config['provider']['url'])
+        self.model = self.config['provider']['model']
 
         self.client = OpenAI(
             api_key=self.api_key,
             base_url=self.url,
-            timeout=self.request_timeout,
         )
 
     def _normalize_base_url(self, url):
@@ -73,22 +53,13 @@ class API:
                 payload[field] = value
 
         try:
-            start = time.time()
             completion = self.client.chat.completions.create(**payload)
             if not completion.choices:
                 return None
             response = completion.choices[0].message.content or ''
             return response.lstrip('\n')
         except Exception as e:
-            elapsed = None
-            try:
-                elapsed = time.time() - start
-            except Exception:
-                pass
-            if elapsed is None:
-                print(f'获取回复报错：{e}')
-            else:
-                print(f'获取回复报错：{e} (use={elapsed:.2f}s, timeout={self.request_timeout}s)')
+            print(f'获取回复报错：{e}')
             return None
 
 
@@ -114,10 +85,10 @@ if __name__ == "__main__":
         return y
     plugin_root = Path(__file__).resolve().parent
     config = load_yaml(plugin_root / 'config' / 'config.yaml')
-    api = API(config=config, provider_name='RightCode')
+    api = API(config=config['llm'])
     response = api.sending_list([{
         'role': 'user',
-        'content': '晚安咯',
+        'content': '你好呀',
     }])
     print(response)
 
