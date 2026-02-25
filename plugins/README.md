@@ -30,7 +30,7 @@
 
 1. `WechatBot.py` 初始化 `state`
 2. 自动扫描 `plugins/*/main.py`
-3. 动态加载每个 `Plugin`
+3. 动态加载每个可用的 `Plugin`
 4. 依次执行 `init()`
 5. 收到新消息后，按顺序调用各插件 `is_for_me(msg)`
 6. 第一个返回 `True` 的插件执行 `handle_msg(msg)`，本条消息处理结束
@@ -69,9 +69,6 @@ class Plugin:
 
 ### 4) 插件产物写入插件目录
 
-- 例如：`plugins/five_son/board/`
-- 例如：`plugins/simple_api/images/`
-
 不要把插件产物写到项目根目录。
 
 ---
@@ -95,7 +92,7 @@ except ImportError:
   from ABC import ABC
 ```
 
-这样直接运行 `main.py` 即可
+这样直接运行 `main.py` 也可以跑通
 
 ---
 
@@ -116,7 +113,7 @@ except ImportError:
 
 ### `bind_plugins` 详细说明
 
-`bind_plugins` 是一个**可选钩子**，用于“确实需要跨插件协作”时注入依赖。用它说明你的插件组织的有点shi
+`bind_plugins` 是一个**可选钩子**，用于“确实需要跨插件协作”时注入依赖。必须要用它说明你的插件组织的有点💩
 
 #### 1) 什么时候用
 

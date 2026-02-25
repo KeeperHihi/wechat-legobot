@@ -73,7 +73,7 @@ pip install -r Wcf/requirements.txt
 
 ### 1) 微信配置
 
-详见 Wcf 仓库
+详见 [Wcf 仓库](https://github.com/KeeperHihi/Wcf.git)
 
 ### 2) 全局配置
 
@@ -122,7 +122,7 @@ python WechatBot.py
 
 ## 内置插件概览
 
-插件写的比较shi，如果看着不爽可以都删掉，只是作为开发样例。
+插件写的比较💩，如果看着不爽可以都删掉，只是作为开发样例。
 
 - `plugins/llm`：默认对话插件，支持人格切换、模型切换、上下文重置等。
 - `plugins/owner_ops`：owner 管理指令（停机、权限管理、批量切换等）。
