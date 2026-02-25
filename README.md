@@ -1,4 +1,6 @@
-﻿# WechatBot
+﻿# WeChat-LegoBot
+
+## 像搭积木一样制作微信机器人
 
 基于 Windows 微信桌面端 UI 控制的插件化机器人项目。
 
