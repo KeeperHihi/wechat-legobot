@@ -115,7 +115,7 @@ disabled_plugins:
 ## 快速启动
 
 1. 打开并登录微信客户端
-2. 检查 `Wcf` 相关配置（与当前登录微信保持一致）
+2. 完善 `config/config.yaml`, `plugins/llm/config/config.yaml`, `Wcf/config/config.yaml` 三个配置文件
 3. 运行主程序：
 
 ```bash
