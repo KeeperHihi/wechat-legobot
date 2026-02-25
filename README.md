@@ -30,7 +30,7 @@
 
 ## 项目说明
 
-- 本项目核心是 `plugin` 抽象：所有功能以热插拔的插件形式实现。
+- 本项目核心是 `plugin` 抽象：所有功能以热插拔的插件形式实现，对于开发者非常友好。
 - 微信控制能力由 `Wcf` 提供，`Wcf` 来自：
   - 上游仓库：[https://github.com/KeeperHihi/Wcf.git](https://github.com/KeeperHihi/Wcf.git)
   - 当前仓库内也包含了 `Wcf/` 目录，便于直接运行。
