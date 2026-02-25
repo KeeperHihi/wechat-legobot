@@ -1,5 +1,7 @@
 __pycache__/
 .idea/
+.vscode/
+
 local/
 TODO.md
 run.bat
@@ -8,11 +10,10 @@ run.bat
 /config/*.yaml
 !/config/config-template.yaml
 
-# LLM 插件配置
-/plugins/llm/config/*.yaml
-!/plugins/llm/config/config-template.yaml
-
-# 运行时生成文件
-/plugins/five_son/board/
-/plugins/simple_api/images/
-/board/
+# 配置文件
+**/.env
+**/.env.*
+**/config.yaml
+!config/config-template.yaml
+!plugins/llm/config/config-template.yaml
+!Wcf/config/config-template.yaml
