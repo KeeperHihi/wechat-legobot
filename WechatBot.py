@@ -12,7 +12,7 @@ def main():
         exc_value,
         exc_traceback,
     )
-    state.init()
+    state._init_wcf()
 
     plugins = load_plugins(state)
     plugin_usable = getattr(state, 'plugin_usable', None)

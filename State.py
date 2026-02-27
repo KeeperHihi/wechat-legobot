@@ -36,11 +36,10 @@ class State:
         return usable
 
 
-    def init(self):
+    def _init_wcf(self):
         # Wcf 相关，涉及到 UI 操作
         self.wcf = Wcf()
         self.friend_names = self.wcf.get_friends()
-        self.stop_requested = False
 
 
     def print_state(self):
